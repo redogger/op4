@@ -1,0 +1,26 @@
+# ═══ State & Sessions ═══
+.dulms-state.json
+.dulms-state.json.tmp
+.dulms-session.json
+.dulms-session.json.tmp
+.dulms-session.json.plain
+.dulms-session-meta.json
+.dulms-audit.log
+.dulms-audit.log.old
+*.plain
+.env
+
+# ═══ Node ═══
+node_modules/
+package-lock.json
+npm-debug.log*
+yarn-error.log*
+
+# ═══ OS ═══
+.DS_Store
+Thumbs.db
+
+# ═══ IDE ═══
+.vscode/
+.idea/
+*.swp
