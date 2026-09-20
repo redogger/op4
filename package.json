@@ -1,26 +1,20 @@
-# ═══ State & Sessions ═══
-.dulms-state.json
-.dulms-state.json.tmp
-.dulms-session.json
-.dulms-session.json.tmp
-.dulms-session.json.plain
-.dulms-session-meta.json
-.dulms-audit.log
-.dulms-audit.log.old
-*.plain
-.env
-
-# ═══ Node ═══
-node_modules/
-package-lock.json
-npm-debug.log*
-yarn-error.log*
-
-# ═══ OS ═══
-.DS_Store
-Thumbs.db
-
-# ═══ IDE ═══
-.vscode/
-.idea/
-*.swp
+{
+  "name": "dulms-watcher",
+  "version": "15.0.0",
+  "description": "DULMS Watcher v15 — HTTP-only + Dynamic Intervals",
+  "main": "watch.js",
+  "scripts": {
+    "start": "node watch.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.7",
+    "axios-cookiejar-support": "^5.0.3",
+    "cheerio": "^1.0.0",
+    "tough-cookie": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "private": true
+}
