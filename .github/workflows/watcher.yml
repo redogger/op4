@@ -1,0 +1,119 @@
+name: DULMS Watcher v15
+
+on:
+  schedule:
+    - cron: '20 * * * *'
+    - cron: '50 * * * *'
+  workflow_dispatch:
+    inputs:
+      duration_min:
+        description: 'Duration (minutes)'
+        required: false
+        default: '55'
+
+concurrency:
+  group: dulms-watcher-${{ github.run_id }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ─── Restore state ──────────────────────────────────
+      - name: Restore state (cache)
+        id: cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            .dulms-state.json
+            .dulms-session.json
+            .dulms-session-meta.json
+          key: dulms-state-v15-${{ github.run_id }}
+          restore-keys: |
+            dulms-state-v15-
+
+      - name: Restore state (artifact)
+        if: steps.cache-restore.outputs.cache-matched-key == ''
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: dulms-state-v15
+          path: .
+
+      # ─── Setup ──────────────────────────────────────────
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      # ─── Run ────────────────────────────────────────────
+      - name: Run watcher
+        env:
+          DULMS_USERNAME:       ${{ secrets.DULMS_USERNAME }}
+          DULMS_PASSWORD:       ${{ secrets.DULMS_PASSWORD }}
+          TG_TOKEN:             ${{ secrets.TG_TOKEN }}
+          TG_CHAT_ID:           ${{ secrets.TG_CHAT_ID }}
+          STATE_ENCRYPTION_KEY: ${{ secrets.STATE_ENCRYPTION_KEY }}
+          DURATION_MIN:         ${{ github.event.inputs.duration_min || '55' }}
+          NODE_OPTIONS:         '--max-old-space-size=512'
+        run: node watch.js
+
+      # ─── Diagnostics on failure ─────────────────────────
+      - name: Diagnostics
+        if: failure() || cancelled()
+        continue-on-error: true
+        run: |
+          echo "═══ Workspace ═══"
+          ls -la
+          echo ""
+          echo "═══ State files ═══"
+          for f in .dulms-state.json .dulms-session.json .dulms-session-meta.json; do
+            if [ -f "$f" ]; then
+              printf "%-30s size=%s prefix=%s\n" "$f" "$(stat -c%s "$f")" "$(head -c 5 "$f")"
+            else
+              printf "%-30s MISSING\n" "$f"
+            fi
+          done
+          echo ""
+          echo "═══ Audit (last 20) ═══"
+          if [ -f ".dulms-audit.log" ]; then
+            tail -20 .dulms-audit.log
+          fi
+
+      # ─── Save state ─────────────────────────────────────
+      - name: Save state (cache)
+        if: always()
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            .dulms-state.json
+            .dulms-session.json
+            .dulms-session-meta.json
+          key: dulms-state-v15-${{ github.run_id }}
+
+      - name: Save state (artifact)
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: dulms-state-v15
+          path: |
+            .dulms-state.json
+            .dulms-session.json
+            .dulms-session-meta.json
+          retention-days: 5
+          overwrite: true
+          if-no-files-found: ignore
